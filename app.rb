@@ -1,6 +1,5 @@
 require "base64"
 require "digest/sha1"
-require "fog"
 require "json"
 require "openssl"
 require "pry" if ENV["RACK_ENV"] == "development"
@@ -33,30 +32,11 @@ configure do
   set :aws_secret_key, ENV["SECRET_ACCESS_KEY"]
 
   set :bucket, ENV["AWS_BUCKET"]
-
-  storage = Fog::Storage.new({
-    :provider => 'AWS',
-    :aws_access_key_id => settings.aws_access_key_id,
-    :aws_secret_access_key => settings.aws_secret_key,
-  })
-
-  set :storage, storage
-end
-
-get '/' do
-  authenticate!
-  "Hello there, #{github_user.login}!"
-end
-
-get "/token.json" do
-  content_type :json
-
-  authenticate!
-
-  github_user.token.to_json
 end
 
 get "/policy.json" do
+  content_type :json
+
   authenticate!
 
   namespace = "#{github_user.id}/"
@@ -74,8 +54,6 @@ get "/policy.json" do
   }.to_json
 
   encoded_policy_document = Base64.encode64(policy_document).gsub("\n","")
-
-  content_type :json
 
   {
     accessKey: ENV["ACCESS_KEY_ID"],

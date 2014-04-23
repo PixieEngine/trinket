@@ -1,7 +1,6 @@
 source 'https://rubygems.org'
 ruby '2.0.0'
 
-gem "fog"
 gem "json"
 gem 'rack-cors', :require => 'rack/cors'
 gem "sinatra"
