@@ -24,7 +24,7 @@ register Sinatra::Auth::Github
 
 configure do
   set :github_options, {
-    :scopes    => [],
+    :scopes    => "gist",
     :secret    => ENV['GITHUB_CLIENT_SECRET'],
     :client_id => ENV['GITHUB_CLIENT_ID'],
   }
@@ -48,28 +48,25 @@ get '/' do
   "Hello there, #{github_user.login}!"
 end
 
-post "/" do
-  if data = params[:data]
-    file = data[:tempfile]
-    content_type = data[:type]
-  else
-    return 400
-  end
+get "/token.json" do
+  content_type :json
 
-  store(file, content_type, params[:namespace])
+  authenticate!
 
-  200
+  github_user.token.to_json
 end
 
-# TODO: Scope to authorized user and use user's id as a namespace
-
 get "/policy.json" do
-  max_size = 10 * 1024 * 1024
+  authenticate!
+
+  namespace = "#{github_user.id}/"
+
+  max_size = 10 * 1024 * 1024 # 10 MB
   policy_document = {
     expiration: "2020-12-01T12:00:00.000Z",
     conditions: [
       { bucket: settings.bucket},
-      ["starts-with", "$key", ""],
+      ["starts-with", "$key", namespace],
       { acl: "public-read"},
       ["starts-with", "$Content-Type", ""],
       ["content-length-range", 0, max_size]
@@ -87,37 +84,6 @@ get "/policy.json" do
     policy: encoded_policy_document,
     signature: sign_policy(encoded_policy_document)
   }.to_json
-end
-
-def directory
-  settings.storage.directories.get(settings.bucket)
-end
-
-def store(file, content_type=nil, namespace=nil)
-  sha1 = Digest::SHA1.file(file.path).hexdigest
-
-  if namespace
-    key = "#{namespace}/#{sha1}"
-  else
-    key = sha1
-  end
-
-  if directory.files.get(key)
-    # Already stored, do nothing
-    logger.info "already stored at #{key}"
-  else
-    logger.info "storing at #{key}"
-
-    directory.files.create(
-      :key => key,
-      :body => file,
-      :content_type => content_type,
-      :public => true,
-      :metadata => {
-        'Cache-Control' => 'max-age=315576000'
-      }
-    )
-  end
 end
 
 def sign_policy(base64_encoded_policy_document)
