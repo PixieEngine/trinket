@@ -48,7 +48,7 @@ get "/policy.json" do
       { acl: "public-read"},
       { bucket: settings.bucket},
       ["starts-with", "$key", namespace],
-      ["starts-with", "$Cache-Control", "max-age="]
+      ["starts-with", "$Cache-Control", "max-age="],
       ["starts-with", "$Content-Type", ""],
       ["content-length-range", 0, max_size]
     ]
