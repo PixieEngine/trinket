@@ -45,9 +45,10 @@ get "/policy.json" do
   policy_document = {
     expiration: "2020-12-01T12:00:00.000Z",
     conditions: [
+      { acl: "public-read"},
       { bucket: settings.bucket},
       ["starts-with", "$key", namespace],
-      { acl: "public-read"},
+      ["starts-with", "$Cache-Control", "max-age="]
       ["starts-with", "$Content-Type", ""],
       ["content-length-range", 0, max_size]
     ]
