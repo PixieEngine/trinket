@@ -18,6 +18,7 @@ use Rack::Cors do |config|
 end
 
 enable :sessions
+set :session_secret, ENV["SESSION_SECRET"]
 
 register Sinatra::Auth::Github
 
