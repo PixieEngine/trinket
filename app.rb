@@ -5,6 +5,7 @@ require "openssl"
 require "pry" if ENV["RACK_ENV"] == "development"
 require "sinatra"
 require "sinatra_auth_github"
+require "time"
 require "unf"
 
 require "rack/cors"
@@ -24,7 +25,6 @@ register Sinatra::Auth::Github
 
 configure do
   set :github_options, {
-    :scopes    => "gist",
     :secret    => ENV['GITHUB_CLIENT_SECRET'],
     :client_id => ENV['GITHUB_CLIENT_ID'],
   }
@@ -42,9 +42,10 @@ get "/policy.json" do
 
   namespace = "#{github_user.id}/"
 
-  max_size = 10 * 1024 * 1024 # 10 MB
+  max_size = 256 * 1024 * 1024 # 256 MB
+  expiration = (Date.today + 7).iso8601
   policy_document = {
-    expiration: "2020-12-01T12:00:00.000Z",
+    expiration: "#{expiration}T12:00:00.000Z",
     conditions: [
       { acl: "public-read"},
       { bucket: settings.bucket},
